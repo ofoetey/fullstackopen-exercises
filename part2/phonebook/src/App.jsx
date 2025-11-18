@@ -3,7 +3,7 @@ import { SearchFilter, Phonebook, Person, EmptyPerson } from "./phonebook";
 
 const App = () => {
   const [persons, setPersons] = useState([
-    { name: "Arto Hellas", number: "040-123456" },
+    { name: "Arto Hellas", number: "040-123456", id: 1 },
   ]);
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
@@ -21,12 +21,17 @@ const App = () => {
   const handleSubmit = (event) => {
     event.preventDefault();
     const existingPerson = persons.find((person) => person.name === newName);
+    const newPerson = {
+      name: newName,
+      number: newNumber,
+      id: persons.length + 1,
+    };
     if (existingPerson) {
       alert(`${newName} is already added to phonebook`);
       return;
     }
 
-    setPersons(persons.concat({ name: newName, number: newNumber }));
+    setPersons(persons.concat(newPerson));
     setNewName("");
     setNewNumber("");
   };
@@ -48,6 +53,8 @@ const App = () => {
     setFilter(event.target.value);
   };
 
+  console.log(persons);
+
   return (
     <div>
       <h2>Phonebook</h2>
@@ -65,7 +72,7 @@ const App = () => {
         <EmptyPerson />
       ) : (
         filteredPersons.map((person) => (
-          <Person key={person.name} person={person} />
+          <Person key={person.id} person={person} />
         ))
       )}
     </div>
