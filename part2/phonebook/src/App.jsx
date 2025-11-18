@@ -1,18 +1,18 @@
 import { useState, useEffect } from "react";
 import { SearchFilter, Phonebook, Person, EmptyPerson } from "./phonebook";
-import axios from "axios";
+import * as phonebookService from "./api";
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: "Arto Hellas", number: "040-123456", id: 1 },
-  ]);
+  const [persons, setPersons] = useState();
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [filter, setFilter] = useState("");
 
-  const filteredPersons = persons.filter((person) =>
-    person.name.toLowerCase().includes(filter.toLowerCase())
-  );
+  const filteredPersons =
+    persons &&
+    persons.filter((person) =>
+      person?.name?.toLowerCase().includes(filter.toLowerCase())
+    );
 
   const handleNameChange = (event) => {
     event.preventDefault();
@@ -21,31 +21,40 @@ const App = () => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const existingPerson = persons.find((person) => person.name === newName);
+    const existingPerson =
+      persons && persons.find((person) => person?.name === newName);
     const newPerson = {
       name: newName,
       number: newNumber,
-      id: persons.length + 1,
+      id: generateValidId(),
     };
     if (existingPerson) {
-      alert(`${newName} is already added to phonebook`);
-      return;
+      if (
+        window.confirm(
+          `${newName} is already added to phonebook, replace the old number with the new one?`
+        )
+      ) {
+        phonebookService
+          .updatePerson(existingPerson.id, newPerson)
+          .then((response) => {
+            setPersons(
+              persons.map((person) =>
+                person.id === existingPerson.id ? response : person
+              )
+            );
+          });
+      }
+    } else {
+      phonebookService.createPerson(newPerson).then((response) => {
+        setPersons(persons && persons?.concat(response));
+      });
     }
-
-    setPersons(persons.concat(newPerson));
     setNewName("");
     setNewNumber("");
   };
 
   const handleNumberChange = (event) => {
     event.preventDefault();
-    setPersons(
-      persons.map((person) =>
-        person.name === newName
-          ? { ...person, number: event.target.value }
-          : person
-      )
-    );
     setNewNumber(event.target.value);
   };
 
@@ -54,12 +63,24 @@ const App = () => {
     setFilter(event.target.value);
   };
 
-  useEffect(() => {
-    axios.get("http://localhost:3001/persons").then((response) => {
-      if (response) {
-        setPersons(response.data);
-      }
+  const deletePerson = (id) => {
+    phonebookService.deletePerson(id).then(() => {
+      setPersons(persons && persons.filter((person) => person.id !== id));
     });
+  };
+
+  const generateValidId = () => {
+    if (persons.length === 0) {
+      return "0";
+    } else {
+      const maxId =
+        Math.max(...(persons && persons.map((person) => person.id))) + 1;
+      return String(maxId);
+    }
+  };
+
+  useEffect(() => {
+    phonebookService.getAllPersons().then((response) => setPersons(response));
   }, []);
 
   return (
@@ -75,11 +96,11 @@ const App = () => {
       />
 
       <h2>Numbers</h2>
-      {filteredPersons.length === 0 ? (
+      {filteredPersons && filteredPersons.length === 0 ? (
         <EmptyPerson />
       ) : (
-        filteredPersons.map((person) => (
-          <Person key={person.id} person={person} />
+        filteredPersons?.map((person) => (
+          <Person key={person.id} person={person} deletePerson={deletePerson} />
         ))
       )}
     </div>

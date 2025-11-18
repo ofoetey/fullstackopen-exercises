@@ -29,12 +29,25 @@ export const Phonebook = ({
   );
 };
 
-export const Person = ({ person }) => {
-  const { name, number } = person;
+export const Person = ({ person, deletePerson }) => {
+  const { name, number, id } = person;
+
+  const handleDelete = (event) => {
+    event.preventDefault();
+    if (window.confirm(`Delete ${name}?`)) {
+      deletePerson(id);
+    }
+  };
+
   return (
-    <div key={name}>
-      {name} {number}
-    </div>
+    <>
+      <div key={name}>
+        {name} {number}
+        <button type="button" onClick={handleDelete}>
+          delete
+        </button>
+      </div>
+    </>
   );
 };
 
